@@ -1,0 +1,49 @@
+version: "3.3"
+
+services:
+  jenkins:
+    image: jenkins/jenkins
+    ports:
+      - "2222:22"
+      - "8080:8080"
+    networks:
+      - extbone
+      - inbone
+    configs:
+      - source: jenkins_plugins
+        target: /usr/share/jenkins/ref/plugins.txt
+    volumes:
+      - "jenkins_home:/var/jenkins_home"
+
+  auth:
+    image: nginx:1-alpine
+    networks:
+      - inbone
+    configs:
+      - source: auth_conf
+        target: /etc/nginx/conf.d/default.conf
+        mode: 0440
+
+  git:
+    image: sdelrio/git-daemon
+    command: ["git", "daemon", "--verbose", "--export-all", "--base-path=/tmp/git", "--reuseaddr"]
+    networks:
+      - extbone
+    expose:
+      - "9418"
+    volumes:
+      - "./git:/tmp/git:ro"
+    working_dir: /tmp/git
+
+networks:
+  extbone:
+  intbone:
+
+configs:
+  jenkins_plugins:
+    file: ./jenkins_ref_plugins.txt
+  auth_conf:
+    file: ./nginx.conf
+
+volumes:
+  jenkins_home:
